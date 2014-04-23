@@ -1,20 +1,120 @@
-﻿@{
+﻿@model AzureSiteReplicator.Models.ReplicationInfoModel
+
+@{
     ViewBag.Title = "Site list";
 }
 
-<div class="jumbotron">
-    <h1>Site list</h1>
+<div class="container">
+    <div class="row navbar" style="margin-top:10px;">
+        <div class="col-sm-6 col-md-4" id="tabHeadings">
+            <ul class="nav nav-tabs" data-tabs="tabs">
+                <li class="active"><a data-toggle="tab" href="#sites">Sites</a></li>
+                <li><a data-toggle="tab" href="#skips">Skip Rules</a></li>
+            </ul>
+        </div>
+        <div class="col-sm-6 col-md-8">
+        </div>
+    </div>
 
-    <ul class="list-group">
-        @foreach (var site in Model)
-        {
-            <li class="list-group-item">@site</li>
-        }
-    </ul>
+    <div class="row">
+        <div class="col-sm-1"></div>
+
+        <div class="col-sm-10 tab-body tab-content">
+            
+            <!-- Sites Tab -->
+            <div class="tab-pane active" id="sites">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <h1>Site List</h1>
+                        <ul id="siteList" class="list-group" style="margin-bottom:0px;">
+                            @if (Model.SiteStatuses.Count == 0)
+                            {
+                                @:There doesn't appear to be any sites configured yet.  Upload a publish settings file to get started.
+                            }
+                            else
+                            {
+                                var sites = Model.SiteStatuses;
+                                foreach(var site in sites)
+                                {
+                                    string status = site.State == "NotStarted" ? "Deploying" : site.State;
+                                    <li class="list-group-item" data-siteName="@site.Name" data-siteState="@status">
+                                        <span class="siteStatusText">@site.Name - @status</span>
+                                        <a href="#" title="Remove Site" class="removeSiteBadge"><span class="badgePlain glyphicon glyphicon-remove"></span></a>
+                                        <a href="@Url.Action("LogFile", new {SiteName=site.Name})" title="Download logs"><span class="badgePlain glyphicon glyphicon-list"></span></a>
+                                        <a href="#" class="syncSiteBadge" title="Sync"><span class="badgePlain glyphicon glyphicon-repeat"></span></a>
+                                    </li>
+                                }
+                            }
+                        </ul>
+                    </div>
+                </div>
+                <div class="row" style="margin-top:100px;">
+                    <div class="col-sm-12">
+                        <h4>Upload Publish Settings File</h4>
+                        <form action="" class="form-inline" role="form" method="post" enctype="multipart/form-data">
+                            <div class="form-group">
+                                <input type="file" name="file" id="file"/>
+                            </div>
+                            <div class="form-group">
+                                <button type="submit" style="height:23px">Submit</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skips Tab -->
+            <div class="tab-pane" id="skips">
+                <h1>Skip Rules</h1>
+                <div class="row">
+                    <div class="col-sm-12">
+                        <input type="text" id="skipExpressionText" placeholder="Regular Expression for File to Skip" class="col-sm-6"/>
+                        <button type="button" id="addSkipButton" disabled="disabled" class="btn btn-default btn-sm col-sm-1" style="margin-left:5px;">Add</button>
+                        <button type="button" id="saveSkipButton" disabled="disabled" class="btn btn-default btn-sm col-sm-1" style="margin-left:5px;">Save</button>
+                        <button type="button" id="testSkipButton" class="btn btn-default btn-sm btn-primary col-sm-1" style="margin-left:5px">Test</button>
+                    </div>
+                </div>
+                <div class="row" style="margin-top:20px;">
+                    <div class="col-sm-12">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Rule</th>
+                                    <th class="rowCentered" style="width:100px;">Is Directory</th>
+                                    <th class="rowCentered" style="width:50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="skipRulesTableBody">
+                            @foreach (var skip in Model.SkipFiles)
+                            {
+                                <tr class="skipRuleRow">
+                                    <td>@skip.Expression</td>
+                                    <td class="rowCentered"><input type="checkbox" checked="@skip.IsDirectory"/></td>
+                                    <td class="rowCentered"><button type="button" class="close" aria-hidden="true">&times;</button></td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="row" style="margin-top:40px;">
+                    <div class="col-sm-12">
+                        <h4>File to be skipped</h4>
+                        <textarea id="testSkipTextArea" readonly class="col-sm-12 form-control skipTextArea" style="max-width:inherit" rows="10"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-1"></div>
+    </div>
 </div>
 
-<form action="" method="post" enctype="multipart/form-data">
-    <label for="file">Upload new PublishSettings file:</label>
-    <input type="file" name="file" id="file" />
-    <input type="submit" />
-</form>
+@section scripts{
+    <script type="text/javascript" src='@Url.Content("~/Scripts/replicator.js")'></script>
+    <script type="text/javascript">
+
+        // Global Variable used to help javascript resolve the sub application path once the site is hosted on WAWS
+        var BasePath = '@Request.Url.GetLeftPart(UriPartial.Path)'
+    </script>
+}
